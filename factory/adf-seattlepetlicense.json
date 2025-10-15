@@ -1,0 +1,9 @@
+{
+	"name": "adf-seattlepetlicense",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "e5d80ed6-1661-4a75-8d4b-45ced21d5941",
+		"tenantId": "a8eec281-aaa3-4dae-ac9b-9a398b9215e7"
+	}
+}
