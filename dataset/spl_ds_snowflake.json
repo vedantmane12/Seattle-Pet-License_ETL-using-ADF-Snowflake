@@ -1,0 +1,38 @@
+{
+	"name": "spl_ds_snowflake",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "ls_snowflake",
+			"type": "LinkedServiceReference",
+			"parameters": {
+				"database": "SPL_DB",
+				"warehouse": "SPL_WH",
+				"username": "SPL_USER",
+				"role": "SPL_ROLE",
+				"host": "MIMFSEY-HZ22766.snowflakecomputing.com",
+				"account": "MIMFSEY-HZ22766"
+			}
+		},
+		"parameters": {
+			"schema_name": {
+				"type": "string"
+			},
+			"table_name": {
+				"type": "string"
+			}
+		},
+		"annotations": [],
+		"type": "SnowflakeV2Table",
+		"schema": [],
+		"typeProperties": {
+			"schema": {
+				"value": "@dataset().schema_name",
+				"type": "Expression"
+			},
+			"table": {
+				"value": "@dataset().table_name",
+				"type": "Expression"
+			}
+		}
+	}
+}
