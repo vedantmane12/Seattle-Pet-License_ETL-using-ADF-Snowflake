@@ -3,7 +3,7 @@
 	"properties": {
 		"activities": [
 			{
-				"name": "CSVtoParquet",
+				"name": "CSVtoParquet_SPL",
 				"type": "Copy",
 				"dependsOn": [],
 				"policy": {
@@ -46,7 +46,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "License_Issue_Date",
+									"name": "LICENSE_ISSUE_DATE",
 									"physicalType": "UTF8"
 								}
 							},
@@ -57,7 +57,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "License_Number",
+									"name": "LICENSE_NUMBER",
 									"physicalType": "UTF8"
 								}
 							},
@@ -68,7 +68,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "Animals_Name",
+									"name": "ANIMALS_NAME",
 									"physicalType": "UTF8"
 								}
 							},
@@ -79,8 +79,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "Species",
-									"type": "String",
+									"name": "SPECIES",
 									"physicalType": "UTF8"
 								}
 							},
@@ -91,7 +90,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "Primary_Breed",
+									"name": "PRIMARY_BREED",
 									"physicalType": "UTF8"
 								}
 							},
@@ -102,7 +101,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "Secondary_Breed",
+									"name": "SECONDARY_BREED",
 									"physicalType": "UTF8"
 								}
 							},
@@ -113,7 +112,7 @@
 									"physicalType": "String"
 								},
 								"sink": {
-									"name": "ZIP_Code",
+									"name": "ZIP_CODE",
 									"physicalType": "UTF8"
 								}
 							}
@@ -139,7 +138,7 @@
 								"type": "Expression"
 							},
 							"filename": {
-								"value": "@concat(\n    pipeline().parameters.filename,\n    '.csv'\n)",
+								"value": "@concat(\n    pipeline().parameters.spl_file,\n    '.csv'\n)",
 								"type": "Expression"
 							}
 						}
@@ -159,7 +158,172 @@
 								"type": "Expression"
 							},
 							"filename": {
-								"value": "@concat(\n    pipeline().parameters.filename,\n    '.parquet'\n)",
+								"value": "@concat(\n    pipeline().parameters.spl_file,\n    '.parquet'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "CSVtoParquet_GEO",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "CSVtoParquet_SPL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "state_fips",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "state_fips",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "state",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "state",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "state_abbr",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "state_abbr",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "zipcode",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "zipcode",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "county",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "county",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "city",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "city",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "spl_ds_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.src_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.loc_file,\n    '.csv'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "spl_ds_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.sink_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.loc_file,\n    '.parquet'\n)",
 								"type": "Expression"
 							}
 						}
@@ -176,13 +340,17 @@
 				"type": "String",
 				"defaultValue": "csv"
 			},
-			"filename": {
-				"type": "String",
-				"defaultValue": "Seattle_Pet_Licenses"
-			},
 			"sink_directory": {
 				"type": "String",
 				"defaultValue": "parquet"
+			},
+			"spl_file": {
+				"type": "string",
+				"defaultValue": "Seattle_Pet_Licenses"
+			},
+			"loc_file": {
+				"type": "string",
+				"defaultValue": "geo-data"
 			}
 		},
 		"annotations": []
