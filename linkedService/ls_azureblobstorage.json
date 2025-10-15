@@ -1,0 +1,11 @@
+{
+	"name": "ls_azureblobstorage",
+	"properties": {
+		"annotations": [],
+		"type": "AzureBlobStorage",
+		"typeProperties": {
+			"serviceEndpoint": "https://storagedamg7370.blob.core.windows.net/",
+			"accountKind": "StorageV2"
+		}
+	}
+}
