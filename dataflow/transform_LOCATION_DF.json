@@ -9,19 +9,50 @@
 						"referenceName": "spl_ds_snowflake",
 						"type": "DatasetReference"
 					},
-					"name": "sourceLocationDIM"
+					"name": "sourceLocation"
 				},
 				{
 					"dataset": {
 						"referenceName": "spl_ds_snowflake",
 						"type": "DatasetReference"
 					},
-					"name": "sourceLocation"
+					"name": "sourceLocationDIM"
 				}
 			],
-			"sinks": [],
-			"transformations": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sinkLocation"
+				}
+			],
+			"transformations": [
+				{
+					"name": "join"
+				},
+				{
+					"name": "LocationKey"
+				},
+				{
+					"name": "RowChanges"
+				}
+			],
 			"scriptLines": [
+				"source(output(",
+				"          StateFIPS as string,",
+				"          State as string,",
+				"          State_ABBR as string,",
+				"          ZipCode as string,",
+				"          County as string,",
+				"          City as string,",
+				"          DI_CREATED_DT as timestamp,",
+				"          DI_CREATED_BY as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> sourceLocation",
 				"source(output(",
 				"          LOCATION_KEY as decimal(38,0),",
 				"          ZIP_CODE as string,",
@@ -30,15 +61,43 @@
 				"          STATE as string,",
 				"          STATE_ABBR as string,",
 				"          STATE_FIPS as string,",
-				"          DI_CREATED_DT as timestamp,",
-				"          DI_CREATED_BY as string",
+				"          DATE_TO_WAREHOUSE as timestamp,",
+				"          SOURCE_ID as string",
 				"     ),",
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'table') ~> sourceLocationDIM",
-				"source(allowSchemaDrift: true,",
+				"sourceLocation, sourceLocationDIM join(ZipCode == ZIP_CODE,",
+				"     joinType:'left',",
+				"     matchType:'exact',",
+				"     ignoreSpaces: false,",
+				"     broadcast: 'auto')~> join",
+				"join keyGenerate(output(Location_Key as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> LocationKey",
+				"LocationKey alterRow(updateIf(ZipCode == ZIP_CODE ),",
+				"     insertIf(iifNull(sourceLocationDIM@LOCATION_KEY, 0, sourceLocationDIM@LOCATION_KEY) == 0)) ~> RowChanges",
+				"RowChanges sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
-				"     format: 'table') ~> sourceLocation"
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     stageInsert: true,",
+				"     mapColumn(",
+				"          LOCATION_KEY = LocationKey@Location_Key,",
+				"          STATE_FIPS = StateFIPS,",
+				"          STATE = sourceLocation@State,",
+				"          STATE_ABBR = sourceLocation@State_ABBR,",
+				"          ZIP_CODE = ZipCode,",
+				"          COUNTY = sourceLocation@County,",
+				"          CITY = sourceLocation@City,",
+				"          DATE_TO_WAREHOUSE = DI_CREATED_DT,",
+				"          SOURCE_ID = DI_CREATED_BY",
+				"     )) ~> sinkLocation"
 			]
 		}
 	}
