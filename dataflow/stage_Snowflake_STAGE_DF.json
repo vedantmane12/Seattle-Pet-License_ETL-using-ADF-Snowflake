@@ -1,0 +1,50 @@
+{
+	"name": "stage_Snowflake_STAGE_DF",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_parquet",
+						"type": "DatasetReference"
+					},
+					"name": "sourceParquet"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sinkSnowflakeSTAGE"
+				}
+			],
+			"transformations": [
+				{
+					"name": "addAuditColumns"
+				}
+			],
+			"scriptLines": [
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false,",
+				"     format: 'parquet') ~> sourceParquet",
+				"sourceParquet derive(DI_CREATED_DT = currentTimestamp(),",
+				"          DI_CREATED_BY = 'ADF_PIPELINE') ~> addAuditColumns",
+				"addAuditColumns sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     stageInsert: true) ~> sinkSnowflakeSTAGE"
+			]
+		}
+	}
+}

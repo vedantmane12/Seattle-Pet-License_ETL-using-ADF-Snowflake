@@ -1,0 +1,45 @@
+{
+	"name": "transform_LOCATION_DF",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sourceLocationDIM"
+				},
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sourceLocation"
+				}
+			],
+			"sinks": [],
+			"transformations": [],
+			"scriptLines": [
+				"source(output(",
+				"          LOCATION_KEY as decimal(38,0),",
+				"          ZIP_CODE as string,",
+				"          CITY as string,",
+				"          COUNTY as string,",
+				"          STATE as string,",
+				"          STATE_ABBR as string,",
+				"          STATE_FIPS as string,",
+				"          DI_CREATED_DT as timestamp,",
+				"          DI_CREATED_BY as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> sourceLocationDIM",
+				"source(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> sourceLocation"
+			]
+		}
+	}
+}
