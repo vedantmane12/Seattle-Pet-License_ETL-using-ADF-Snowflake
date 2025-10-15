@@ -1,6 +1,6 @@
 {
 	"name": "ls_azurekeyvault",
-	"type": "Microsoft.DataFactory/factories/linkedservices",
+  "type": "Microsoft.DataFactory/factories/linkedservices",
 	"properties": {
 		"annotations": [],
 		"type": "AzureKeyVault",
