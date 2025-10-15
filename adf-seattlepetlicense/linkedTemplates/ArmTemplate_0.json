@@ -1,0 +1,136 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"factoryName": {
+			"type": "string",
+			"metadata": "Data Factory name",
+			"defaultValue": "adf-seattlepetlicense"
+		},
+		"ls_azureblobstorage_properties_typeProperties_serviceEndpoint": {
+			"type": "string",
+			"defaultValue": "https://storagedamg7370.blob.core.windows.net/"
+		},
+		"ls_azureblobstorage_sas_sasUri": {
+			"type": "secureString",
+			"metadata": "Secure string for 'sasUri' of 'ls_azureblobstorage_sas'"
+		},
+		"ls_azurekeyvault_properties_typeProperties_baseUrl": {
+			"type": "string",
+			"defaultValue": "https://kvault-damg7370.vault.azure.net/"
+		},
+		"ls_snowflake_properties_typeProperties_database": {
+			"type": "string",
+			"defaultValue": "@{linkedService().database}"
+		},
+		"ls_snowflake_properties_typeProperties_role": {
+			"type": "string",
+			"defaultValue": "@{linkedService().role}"
+		},
+		"ls_snowflake_properties_typeProperties_host": {
+			"type": "string",
+			"defaultValue": "@{linkedService().host}"
+		}
+	},
+	"variables": {
+		"factoryId": "[concat('Microsoft.DataFactory/factories/', parameters('factoryName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_azureblobstorage')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"serviceEndpoint": "[parameters('ls_azureblobstorage_properties_typeProperties_serviceEndpoint')]",
+					"accountKind": "StorageV2"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_azureblobstorage_sas')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobStorage",
+				"typeProperties": {
+					"sasUri": "[parameters('ls_azureblobstorage_sas_sasUri')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_azurekeyvault')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "AzureKeyVault",
+				"typeProperties": {
+					"baseUrl": "[parameters('ls_azurekeyvault_properties_typeProperties_baseUrl')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/ls_snowflake')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"parameters": {
+					"database": {
+						"type": "string",
+						"defaultValue": "SPL_DB"
+					},
+					"warehouse": {
+						"type": "string",
+						"defaultValue": "SPL_WH"
+					},
+					"username": {
+						"type": "string",
+						"defaultValue": "SPL_USER"
+					},
+					"role": {
+						"type": "string",
+						"defaultValue": "SPL_ROLE"
+					},
+					"host": {
+						"type": "string",
+						"defaultValue": "MIMFSEY-HZ22766.snowflakecomputing.com"
+					},
+					"account": {
+						"type": "string",
+						"defaultValue": "MIMFSEY-HZ22766"
+					}
+				},
+				"annotations": [],
+				"type": "SnowflakeV2",
+				"typeProperties": {
+					"authenticationType": "Basic",
+					"accountIdentifier": "@{linkedService().account}",
+					"user": "@{linkedService().username}",
+					"database": "[parameters('ls_snowflake_properties_typeProperties_database')]",
+					"warehouse": "@{linkedService().warehouse}",
+					"role": "[parameters('ls_snowflake_properties_typeProperties_role')]",
+					"host": "[parameters('ls_snowflake_properties_typeProperties_host')]",
+					"password": {
+						"type": "AzureKeyVaultSecret",
+						"store": {
+							"referenceName": "ls_azurekeyvault",
+							"type": "LinkedServiceReference"
+						},
+						"secretName": "seattle-pet-license-snowflake"
+					}
+				},
+				"version": "1.1"
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/ls_azurekeyvault')]"
+			]
+		}
+	]
+}
