@@ -12,13 +12,24 @@
 					"name": "sourceBreed"
 				}
 			],
-			"sinks": [],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sinkBreed"
+				}
+			],
 			"transformations": [
 				{
-					"name": "selectRelColumns"
+					"name": "aggregateBreeds"
 				},
 				{
-					"name": "aggregateBreeds"
+					"name": "selectRelatedColumns"
+				},
+				{
+					"name": "BreedKey"
 				}
 			],
 			"scriptLines": [
@@ -36,20 +47,43 @@
 				"     allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     format: 'table') ~> sourceBreed",
+				"selectRelatedColumns aggregate(groupBy(Species,",
+				"          Primary_Breed,",
+				"          Secondary_Breed,",
+				"          DI_CREATED_DT,",
+				"          DI_CREATED_BY),",
+				"     COUNT = count(1)) ~> aggregateBreeds",
 				"sourceBreed select(mapColumn(",
 				"          Species,",
 				"          Primary_Breed,",
 				"          Secondary_Breed,",
 				"          DI_CREATED_DT,",
-				"          DI_CREATED_BY,",
-				"          License_Number",
+				"          DI_CREATED_BY",
 				"     ),",
 				"     skipDuplicateMapInputs: true,",
-				"     skipDuplicateMapOutputs: true) ~> selectRelColumns",
-				"selectRelColumns aggregate(groupBy(Species,",
-				"          Primary_Breed,",
-				"          Secondary_Breed),",
-				"     COUNT = count(1)) ~> aggregateBreeds"
+				"     skipDuplicateMapOutputs: true) ~> selectRelatedColumns",
+				"aggregateBreeds keyGenerate(output(Breed_Key as long),",
+				"     startAt: 1L,",
+				"     stepValue: 1L) ~> BreedKey",
+				"BreedKey sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     deletable:false,",
+				"     insertable:true,",
+				"     updateable:false,",
+				"     upsertable:false,",
+				"     truncate:true,",
+				"     format: 'table',",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     stageInsert: true,",
+				"     mapColumn(",
+				"          BREED_KEY = Breed_Key,",
+				"          SPECIES = Species,",
+				"          PRIMARY_BREED = Primary_Breed,",
+				"          SECONDARY_BREED = Secondary_Breed,",
+				"          DATE_TO_WAREHOUSE = DI_CREATED_DT,",
+				"          SOURCE_ID = DI_CREATED_BY",
+				"     )) ~> sinkBreed"
 			]
 		}
 	}
