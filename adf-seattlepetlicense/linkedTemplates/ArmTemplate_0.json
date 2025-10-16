@@ -327,6 +327,101 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/transform_BREED_DF')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "spl_ds_snowflake",
+								"type": "DatasetReference"
+							},
+							"name": "sourceBreed"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "spl_ds_snowflake",
+								"type": "DatasetReference"
+							},
+							"name": "sinkBreed"
+						}
+					],
+					"transformations": [
+						{
+							"name": "aggregateBreeds"
+						},
+						{
+							"name": "selectRelatedColumns"
+						},
+						{
+							"name": "BreedKey"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          License_Issue_Date as string,",
+						"          License_Number as string,",
+						"          Animals_Name as string,",
+						"          Species as string,",
+						"          Primary_Breed as string,",
+						"          Secondary_Breed as string,",
+						"          ZipCode as string,",
+						"          DI_CREATED_DT as timestamp,",
+						"          DI_CREATED_BY as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     format: 'table') ~> sourceBreed",
+						"selectRelatedColumns aggregate(groupBy(Species,",
+						"          Primary_Breed,",
+						"          Secondary_Breed,",
+						"          DI_CREATED_DT,",
+						"          DI_CREATED_BY),",
+						"     COUNT = count(1)) ~> aggregateBreeds",
+						"sourceBreed select(mapColumn(",
+						"          Species,",
+						"          Primary_Breed,",
+						"          Secondary_Breed,",
+						"          DI_CREATED_DT,",
+						"          DI_CREATED_BY",
+						"     ),",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true) ~> selectRelatedColumns",
+						"aggregateBreeds keyGenerate(output(Breed_Key as long),",
+						"     startAt: 1L,",
+						"     stepValue: 1L) ~> BreedKey",
+						"BreedKey sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     deletable:false,",
+						"     insertable:true,",
+						"     updateable:false,",
+						"     upsertable:false,",
+						"     truncate:true,",
+						"     format: 'table',",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     stageInsert: true,",
+						"     mapColumn(",
+						"          BREED_KEY = Breed_Key,",
+						"          SPECIES = Species,",
+						"          PRIMARY_BREED = Primary_Breed,",
+						"          SECONDARY_BREED = Secondary_Breed,",
+						"          DATE_TO_WAREHOUSE = DI_CREATED_DT,",
+						"          SOURCE_ID = DI_CREATED_BY",
+						"     )) ~> sinkBreed"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/spl_ds_snowflake')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/transform_LOCATION_DF')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -405,8 +500,8 @@
 						"join keyGenerate(output(Location_Key as long),",
 						"     startAt: 1L,",
 						"     stepValue: 1L) ~> LocationKey",
-						"LocationKey alterRow(updateIf(ZipCode == ZIP_CODE ),",
-						"     insertIf(iifNull(sourceLocationDIM@LOCATION_KEY, 0, sourceLocationDIM@LOCATION_KEY) == 0)) ~> RowChanges",
+						"LocationKey alterRow(updateIf(ZipCode==ZIP_CODE),",
+						"     insertIf(iifNull(ZipCode,'0',ZipCode)=='0')) ~> RowChanges",
 						"RowChanges sink(allowSchemaDrift: true,",
 						"     validateSchema: false,",
 						"     deletable:false,",
@@ -436,7 +531,7 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/extract_SPLcsv_PL')]",
+			"name": "[concat(parameters('factoryName'), '/ETL_seattle_pet_license_PL')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -481,12 +576,13 @@
 									{
 										"source": {
 											"name": "License Issue Date",
-											"type": "String",
+											"type": "Date",
 											"physicalType": "String"
 										},
 										"sink": {
 											"name": "License_Issue_Date",
-											"physicalType": "UTF8"
+											"type": "Date",
+											"isNullable": true
 										}
 									},
 									{
@@ -893,8 +989,7 @@
 											"type": "Expression"
 										}
 									}
-								},
-								"linkedServiceParameters": {}
+								}
 							},
 							"staging": {},
 							"compute": {
@@ -903,6 +998,136 @@
 							},
 							"traceLevel": "Fine"
 						}
+					},
+					{
+						"name": "transform_BREED_DF",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "transform_LOCATION_DF",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "transform_BREED_DF",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"sourceBreed": {
+										"schema_name": {
+											"value": "@pipeline().parameters.stage_schema",
+											"type": "Expression"
+										},
+										"table_name": {
+											"value": "@pipeline().parameters.spl_parquet",
+											"type": "Expression"
+										}
+									},
+									"sinkBreed": {
+										"schema_name": {
+											"value": "@pipeline().parameters.wh_schema",
+											"type": "Expression"
+										},
+										"table_name": {
+											"value": "@pipeline().parameters.wh_brd_dim",
+											"type": "Expression"
+										}
+									}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					},
+					{
+						"name": "Load_PetLicense_FACT",
+						"type": "Copy",
+						"dependsOn": [
+							{
+								"activity": "transform_BREED_DF",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.00:10:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"source": {
+								"type": "SnowflakeV2Source",
+								"query": "SELECT\n    ROW_NUMBER() OVER (ORDER BY stg.\"License_Number\") AS PET_LICENSE_KEY,\n    stg.\"License_Number\" AS LICENSE_NUMBER,\n    COALESCE(dd.DATE_KEY, 99991231) AS DATE_KEY,\n    COALESCE(dl.LOCATION_KEY, 99999) AS LOCATION_KEY,\n    COALESCE(db.BREED_KEY, 99999) AS BREED_KEY,\n    stg.\"Animals_Name\" AS ANIMAL_NAME,\n    CURRENT_TIMESTAMP() AS DATE_TO_WAREHOUSE,\n    'ADF_ETL_PROCESS' AS SOURCE_ID\nFROM STAGE.STG_PET_LICENSE stg\nLEFT JOIN DW.DIM_DATE dd\n    ON dd.DATE_KEY = TO_NUMBER(TO_CHAR(TO_DATE(stg.\"License_Issue_Date\", 'YYYY-MM-DD'), 'YYYYMMDD'))\nLEFT JOIN DW.DIM_LOCATION dl\n    ON dl.ZIP_CODE = stg.\"ZipCode\"\nLEFT JOIN DW.DIM_BREED db\n    ON db.SPECIES = stg.\"Species\"\n    AND db.PRIMARY_BREED = stg.\"Primary_Breed\"\n    AND (\n        (db.SECONDARY_BREED IS NULL AND stg.\"Secondary_Breed\" IS NULL)\n        OR db.SECONDARY_BREED = stg.\"Secondary_Breed\"\n    )\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM DW.FACT_PET_LICENSE pl\n    WHERE pl.LICENSE_NUMBER = stg.\"License_Number\"\n)",
+								"exportSettings": {
+									"type": "SnowflakeExportCopyCommand"
+								}
+							},
+							"sink": {
+								"type": "SnowflakeV2Sink",
+								"importSettings": {
+									"type": "SnowflakeImportCopyCommand"
+								}
+							},
+							"enableStaging": true,
+							"stagingSettings": {
+								"linkedServiceName": {
+									"referenceName": "ls_azureblobstorage_sas",
+									"type": "LinkedServiceReference"
+								},
+								"path": "seattlepetlicensecsv/csv"
+							}
+						},
+						"inputs": [
+							{
+								"referenceName": "spl_ds_snowflake",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema_name": {
+										"value": "@pipeline().parameters.stage_schema",
+										"type": "Expression"
+									},
+									"table_name": {
+										"value": "@pipeline().parameters.spl_parquet",
+										"type": "Expression"
+									}
+								}
+							}
+						],
+						"outputs": [
+							{
+								"referenceName": "spl_ds_snowflake",
+								"type": "DatasetReference",
+								"parameters": {
+									"schema_name": {
+										"value": "@pipeline().parameters.wh_schema",
+										"type": "Expression"
+									},
+									"table_name": {
+										"value": "@pipeline().parameters.fact_table",
+										"type": "Expression"
+									}
+								}
+							}
+						]
 					}
 				],
 				"policy": {
@@ -955,6 +1180,14 @@
 					"wh_loc_dim": {
 						"type": "string",
 						"defaultValue": "DIM_LOCATION"
+					},
+					"wh_brd_dim": {
+						"type": "string",
+						"defaultValue": "DIM_BREED"
+					},
+					"fact_table": {
+						"type": "string",
+						"defaultValue": "FACT_PET_LICENSE"
 					}
 				},
 				"annotations": []
@@ -963,6 +1196,9 @@
 				"[concat(variables('factoryId'), '/datasets/spl_ds_csv')]",
 				"[concat(variables('factoryId'), '/datasets/spl_ds_parquet')]",
 				"[concat(variables('factoryId'), '/dataflows/transform_LOCATION_DF')]",
+				"[concat(variables('factoryId'), '/dataflows/transform_BREED_DF')]",
+				"[concat(variables('factoryId'), '/datasets/spl_ds_snowflake')]",
+				"[concat(variables('factoryId'), '/linkedServices/ls_azureblobstorage_sas')]",
 				"[concat(variables('factoryId'), '/dataflows/stage_Snowflake_STAGE_DF')]"
 			]
 		}
