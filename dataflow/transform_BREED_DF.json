@@ -1,0 +1,56 @@
+{
+	"name": "transform_BREED_DF",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference"
+					},
+					"name": "sourceBreed"
+				}
+			],
+			"sinks": [],
+			"transformations": [
+				{
+					"name": "selectRelColumns"
+				},
+				{
+					"name": "aggregateBreeds"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          License_Issue_Date as string,",
+				"          License_Number as string,",
+				"          Animals_Name as string,",
+				"          Species as string,",
+				"          Primary_Breed as string,",
+				"          Secondary_Breed as string,",
+				"          ZipCode as string,",
+				"          DI_CREATED_DT as timestamp,",
+				"          DI_CREATED_BY as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     format: 'table') ~> sourceBreed",
+				"sourceBreed select(mapColumn(",
+				"          Species,",
+				"          Primary_Breed,",
+				"          Secondary_Breed,",
+				"          DI_CREATED_DT,",
+				"          DI_CREATED_BY,",
+				"          License_Number",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> selectRelColumns",
+				"selectRelColumns aggregate(groupBy(Species,",
+				"          Primary_Breed,",
+				"          Secondary_Breed),",
+				"     COUNT = count(1)) ~> aggregateBreeds"
+			]
+		}
+	}
+}

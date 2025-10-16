@@ -76,7 +76,7 @@
 				"     startAt: 1L,",
 				"     stepValue: 1L) ~> LocationKey",
 				"LocationKey alterRow(updateIf(ZipCode == ZIP_CODE ),",
-				"     insertIf(iifNull(sourceLocationDIM@LOCATION_KEY, 0, sourceLocationDIM@LOCATION_KEY) == 0)) ~> RowChanges",
+				"     insertIf(iifNull(ZipCode, '0', ZipCode) == '0')) ~> RowChanges",
 				"RowChanges sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     deletable:false,",

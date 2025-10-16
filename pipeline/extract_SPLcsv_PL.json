@@ -42,12 +42,13 @@
 							{
 								"source": {
 									"name": "License Issue Date",
-									"type": "String",
+									"type": "Date",
 									"physicalType": "String"
 								},
 								"sink": {
 									"name": "License_Issue_Date",
-									"physicalType": "UTF8"
+									"type": "Date",
+									"isNullable": true
 								}
 							},
 							{
