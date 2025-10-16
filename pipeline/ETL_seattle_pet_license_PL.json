@@ -1,0 +1,652 @@
+{
+	"name": "ETL_seattle_pet_license_PL",
+	"properties": {
+		"activities": [
+			{
+				"name": "CSVtoParquet_SPL",
+				"type": "Copy",
+				"dependsOn": [],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "License Issue Date",
+									"type": "Date",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "License_Issue_Date",
+									"type": "Date",
+									"isNullable": true
+								}
+							},
+							{
+								"source": {
+									"name": "License Number",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "License_Number",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "Animal's Name",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Animals_Name",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "Species",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Species",
+									"type": "String",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "Primary Breed",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Primary_Breed",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "Secondary Breed",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "Secondary_Breed",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "ZIP Code",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ZipCode",
+									"physicalType": "UTF8"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "spl_ds_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.src_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.spl_file,\n    '.csv'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "spl_ds_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.sink_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.spl_parquet,\n    '.parquet'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "CSVtoParquet_GEO",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "CSVtoParquet_SPL",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "DelimitedTextSource",
+						"storeSettings": {
+							"type": "AzureBlobStorageReadSettings",
+							"recursive": true,
+							"enablePartitionDiscovery": false
+						},
+						"formatSettings": {
+							"type": "DelimitedTextReadSettings"
+						}
+					},
+					"sink": {
+						"type": "ParquetSink",
+						"storeSettings": {
+							"type": "AzureBlobStorageWriteSettings"
+						},
+						"formatSettings": {
+							"type": "ParquetWriteSettings"
+						}
+					},
+					"enableStaging": false,
+					"translator": {
+						"type": "TabularTranslator",
+						"mappings": [
+							{
+								"source": {
+									"name": "state_fips",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "StateFIPS",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "state",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "State",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "state_abbr",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "State_ABBR",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "zipcode",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "ZipCode",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "county",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "County",
+									"physicalType": "UTF8"
+								}
+							},
+							{
+								"source": {
+									"name": "city",
+									"type": "String",
+									"physicalType": "String"
+								},
+								"sink": {
+									"name": "City",
+									"physicalType": "UTF8"
+								}
+							}
+						],
+						"typeConversion": true,
+						"typeConversionSettings": {
+							"allowDataTruncation": true,
+							"treatBooleanAsNumber": false
+						}
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "spl_ds_csv",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.src_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.loc_file,\n    '.csv'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "spl_ds_parquet",
+						"type": "DatasetReference",
+						"parameters": {
+							"container": {
+								"value": "@pipeline().parameters.container",
+								"type": "Expression"
+							},
+							"directory": {
+								"value": "@pipeline().parameters.sink_directory",
+								"type": "Expression"
+							},
+							"filename": {
+								"value": "@concat(\n    pipeline().parameters.loc_parquet,\n    '.parquet'\n)",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			},
+			{
+				"name": "Parquet_to_Snowflake_STAGE",
+				"type": "ForEach",
+				"dependsOn": [
+					{
+						"activity": "CSVtoParquet_GEO",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"userProperties": [],
+				"typeProperties": {
+					"items": {
+						"value": "@pipeline().parameters.stage_array",
+						"type": "Expression"
+					},
+					"batchCount": 2,
+					"activities": [
+						{
+							"name": "stage_Snowflake_STAGE_DF",
+							"type": "ExecuteDataFlow",
+							"dependsOn": [],
+							"policy": {
+								"timeout": "0.12:00:00",
+								"retry": 0,
+								"retryIntervalInSeconds": 30,
+								"secureOutput": false,
+								"secureInput": false
+							},
+							"userProperties": [],
+							"typeProperties": {
+								"dataflow": {
+									"referenceName": "stage_Snowflake_STAGE_DF",
+									"type": "DataFlowReference",
+									"datasetParameters": {
+										"sourceParquet": {
+											"container": {
+												"value": "@pipeline().parameters.container",
+												"type": "Expression"
+											},
+											"directory": {
+												"value": "@pipeline().parameters.sink_directory",
+												"type": "Expression"
+											},
+											"filename": {
+												"value": "@concat(\n    item(),\n    '.parquet'\n)",
+												"type": "Expression"
+											}
+										},
+										"sinkSnowflakeSTAGE": {
+											"schema_name": {
+												"value": "@pipeline().parameters.stage_schema",
+												"type": "Expression"
+											},
+											"table_name": {
+												"value": "@toUpper(\n    item()\n)",
+												"type": "Expression"
+											}
+										}
+									}
+								},
+								"compute": {
+									"coreCount": 8,
+									"computeType": "General"
+								},
+								"traceLevel": "Fine"
+							}
+						}
+					]
+				}
+			},
+			{
+				"name": "transform_LOCATION_DF",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "Parquet_to_Snowflake_STAGE",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "transform_LOCATION_DF",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sourceLocation": {
+								"schema_name": {
+									"value": "@pipeline().parameters.stage_schema",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@pipeline().parameters.loc_parquet",
+									"type": "Expression"
+								}
+							},
+							"sourceLocationDIM": {
+								"schema_name": {
+									"value": "@pipeline().parameters.wh_schema",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@pipeline().parameters.wh_loc_dim",
+									"type": "Expression"
+								}
+							},
+							"sinkLocation": {
+								"schema_name": {
+									"value": "@pipeline().parameters.wh_schema",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@pipeline().parameters.wh_loc_dim",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "transform_BREED_DF",
+				"type": "ExecuteDataFlow",
+				"dependsOn": [
+					{
+						"activity": "transform_LOCATION_DF",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.12:00:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"dataflow": {
+						"referenceName": "transform_BREED_DF",
+						"type": "DataFlowReference",
+						"datasetParameters": {
+							"sourceBreed": {
+								"schema_name": {
+									"value": "@pipeline().parameters.stage_schema",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@pipeline().parameters.spl_parquet",
+									"type": "Expression"
+								}
+							},
+							"sinkBreed": {
+								"schema_name": {
+									"value": "@pipeline().parameters.wh_schema",
+									"type": "Expression"
+								},
+								"table_name": {
+									"value": "@pipeline().parameters.wh_brd_dim",
+									"type": "Expression"
+								}
+							}
+						}
+					},
+					"compute": {
+						"coreCount": 8,
+						"computeType": "General"
+					},
+					"traceLevel": "Fine"
+				}
+			},
+			{
+				"name": "Load_PetLicense_FACT",
+				"type": "Copy",
+				"dependsOn": [
+					{
+						"activity": "transform_BREED_DF",
+						"dependencyConditions": [
+							"Succeeded"
+						]
+					}
+				],
+				"policy": {
+					"timeout": "0.00:10:00",
+					"retry": 0,
+					"retryIntervalInSeconds": 30,
+					"secureOutput": false,
+					"secureInput": false
+				},
+				"userProperties": [],
+				"typeProperties": {
+					"source": {
+						"type": "SnowflakeV2Source",
+						"query": "SELECT\n    ROW_NUMBER() OVER (ORDER BY stg.\"License_Number\") AS PET_LICENSE_KEY,\n    stg.\"License_Number\" AS LICENSE_NUMBER,\n    COALESCE(dd.DATE_KEY, 99991231) AS DATE_KEY,\n    COALESCE(dl.LOCATION_KEY, 99999) AS LOCATION_KEY,\n    COALESCE(db.BREED_KEY, 99999) AS BREED_KEY,\n    stg.\"Animals_Name\" AS ANIMAL_NAME,\n    CURRENT_TIMESTAMP() AS DATE_TO_WAREHOUSE,\n    'ADF_ETL_PROCESS' AS SOURCE_ID\nFROM STAGE.STG_PET_LICENSE stg\nLEFT JOIN DW.DIM_DATE dd\n    ON dd.DATE_KEY = TO_NUMBER(TO_CHAR(TO_DATE(stg.\"License_Issue_Date\", 'YYYY-MM-DD'), 'YYYYMMDD'))\nLEFT JOIN DW.DIM_LOCATION dl\n    ON dl.ZIP_CODE = stg.\"ZipCode\"\nLEFT JOIN DW.DIM_BREED db\n    ON db.SPECIES = stg.\"Species\"\n    AND db.PRIMARY_BREED = stg.\"Primary_Breed\"\n    AND (\n        (db.SECONDARY_BREED IS NULL AND stg.\"Secondary_Breed\" IS NULL)\n        OR db.SECONDARY_BREED = stg.\"Secondary_Breed\"\n    )\nWHERE NOT EXISTS (\n    SELECT 1\n    FROM DW.FACT_PET_LICENSE pl\n    WHERE pl.LICENSE_NUMBER = stg.\"License_Number\"\n)",
+						"exportSettings": {
+							"type": "SnowflakeExportCopyCommand"
+						}
+					},
+					"sink": {
+						"type": "SnowflakeV2Sink",
+						"importSettings": {
+							"type": "SnowflakeImportCopyCommand"
+						}
+					},
+					"enableStaging": true,
+					"stagingSettings": {
+						"linkedServiceName": {
+							"referenceName": "ls_azureblobstorage_sas",
+							"type": "LinkedServiceReference"
+						},
+						"path": "seattlepetlicensecsv/csv"
+					}
+				},
+				"inputs": [
+					{
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": {
+								"value": "@pipeline().parameters.stage_schema",
+								"type": "Expression"
+							},
+							"table_name": {
+								"value": "@pipeline().parameters.spl_parquet",
+								"type": "Expression"
+							}
+						}
+					}
+				],
+				"outputs": [
+					{
+						"referenceName": "spl_ds_snowflake",
+						"type": "DatasetReference",
+						"parameters": {
+							"schema_name": {
+								"value": "@pipeline().parameters.wh_schema",
+								"type": "Expression"
+							},
+							"table_name": {
+								"value": "@pipeline().parameters.fact_table",
+								"type": "Expression"
+							}
+						}
+					}
+				]
+			}
+		],
+		"parameters": {
+			"container": {
+				"type": "String",
+				"defaultValue": "seattlepetlicensecsv"
+			},
+			"src_directory": {
+				"type": "String",
+				"defaultValue": "csv"
+			},
+			"sink_directory": {
+				"type": "String",
+				"defaultValue": "parquet"
+			},
+			"spl_file": {
+				"type": "string",
+				"defaultValue": "Seattle_Pet_Licenses"
+			},
+			"loc_file": {
+				"type": "string",
+				"defaultValue": "geo-data"
+			},
+			"spl_parquet": {
+				"type": "string",
+				"defaultValue": "STG_PET_LICENSE"
+			},
+			"loc_parquet": {
+				"type": "string",
+				"defaultValue": "STG_LOCATION"
+			},
+			"stage_array": {
+				"type": "array",
+				"defaultValue": [
+					"STG_PET_LICENSE",
+					"STG_LOCATION"
+				]
+			},
+			"stage_schema": {
+				"type": "string",
+				"defaultValue": "STAGE"
+			},
+			"wh_schema": {
+				"type": "string",
+				"defaultValue": "DW"
+			},
+			"wh_loc_dim": {
+				"type": "string",
+				"defaultValue": "DIM_LOCATION"
+			},
+			"wh_brd_dim": {
+				"type": "string",
+				"defaultValue": "DIM_BREED"
+			},
+			"fact_table": {
+				"type": "string",
+				"defaultValue": "FACT_PET_LICENSE"
+			}
+		},
+		"annotations": []
+	}
+}
