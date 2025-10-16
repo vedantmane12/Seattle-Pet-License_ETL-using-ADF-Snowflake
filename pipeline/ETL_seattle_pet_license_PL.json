@@ -1,5 +1,5 @@
 {
-	"name": "extract_SPLcsv_PL",
+	"name": "ETL_seattle_pet_license_PL",
 	"properties": {
 		"activities": [
 			{
